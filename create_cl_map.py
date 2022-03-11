@@ -111,6 +111,7 @@ if __name__ == "__main__":
     clmap_color = np.zeros(((1920, 3968, 3)))
     clmap_labels = np.zeros(((1920,3968)))
     clmap_labels_color = np.zeros(((1920, 3968, 3)))
+    clmap_dif = np.zeros(((1920, 3968, 3)))
 
     rgb = image_rgb[:,:,:]
     rad = image_hsi_rad[:,:,:]
@@ -158,19 +159,52 @@ if __name__ == "__main__":
                     clmap_labels[xx:xx+size_chips,yy:yy+size_chips].shape[0] == size_chips and \
                     clmap_labels[xx:xx+size_chips,yy:yy+size_chips].shape[1] == size_chips:
                         clmap_labels[xx:xx+size_chips,yy:yy+size_chips] = label_pred
-                if xx > 340:
+                if xx > 600:
                     salir=True
                     break
         print(xx)
 #            if salir: break
 #        break
+
+    for i in range(1920):
+        for j in range(3968):
+            if clmap_labels[i,j] == 1:
+                #print(clmap_color[i,j])
+                clmap_labels_color[i,j,1] = 255
+            elif clmap_labels[i,j] == 2:
+                #print(clmap_color[i,j])
+                clmap_labels_color[i,j,2] = 255
+            elif clmap_labels[i,j] == 3:
+                #print(clmap_color[i,j])
+                clmap_labels_color[i,j,1] = 255
+                clmap_labels_color[i,j,2] = 255
+            elif clmap_labels[i,j] == 4:
+                #print(clmap_color[i,j])
+                clmap_labels_color[i,j,0] = 255
+                clmap_labels_color[i,j,1] = 127
+                clmap_labels_color[i,j,1] = 80
+            elif clmap_labels[i,j] == 0:
+                #print(clmap_color[i,j])
+                clmap_labels_color[i,j,0] = 153
+                
+            if clmap_color[i,j,0] != clmap_labels_color[i,j,0] and \
+                clmap_color[i,j,1] != clmap_labels_color[i,j,1] and \
+                clmap_color[i,j,2] != clmap_labels_color[i,j,2]:
+                clmap_dif[i,j] = [255,255,255]
+
     sio.savemat("clmap.mat", {"clmap":clmap_color})
     plt.imshow(clmap_color,vmin=0)
     plt.show()
     sio.savemat("clmap_pred.mat", {"clmap_pred":clmap_labels})
-    print(np.unique(clmap_labels))
     plt.imshow(clmap_labels,vmin=0)
     plt.show()
+    sio.savemat("clmap_comp.mat", {"clmap_comp":clmap_labels_color})
+    plt.imshow(clmap_labels_color,vmin=0)
+    plt.show()
+    sio.savemat("clmap_diff.mat", {"clmap_diff":clmap_dif})
+    plt.imshow(clmap_dif,vmin=0)
+    plt.show()
+    
 
                 
                 #rgb_temp.save(osp.join(loc, 'RGB', name + '.tif'))
