@@ -159,9 +159,9 @@ if __name__ == "__main__":
                     clmap_labels[xx:xx+size_chips,yy:yy+size_chips].shape[0] == size_chips and \
                     clmap_labels[xx:xx+size_chips,yy:yy+size_chips].shape[1] == size_chips:
                         clmap_labels[xx:xx+size_chips,yy:yy+size_chips] = label_pred
-                #if xx > 600:
-                    #salir=True
-                    #break
+                # if xx > 600:
+                #     salir=True
+                #     break
         print(xx)
 #            if salir: break
 #        break
@@ -184,12 +184,13 @@ if __name__ == "__main__":
                 clmap_labels_color[i,j,1] = 127
                 clmap_labels_color[i,j,2] = 80
             elif clmap_labels[i,j] == 0:
-                #print(clmap_color[i,j])
-                clmap_labels_color[i,j,0] = 153
+                # print(clmap_color[i,j])
+                clmap_labels_color[i,j,0] = 255
                 
             if clmap_color[i,j,0] != clmap_labels_color[i,j,0] or \
                 clmap_color[i,j,1] != clmap_labels_color[i,j,1] or \
                 clmap_color[i,j,2] != clmap_labels_color[i,j,2]:
+
                 clmap_dif[i,j] = [255,255,255]
 
     sio.savemat("clmap.mat", {"clmap":clmap_color})
