@@ -6,6 +6,11 @@ Created on Wed Jul  3 17:12:08 2019
 @author: aneesh
 """
 import argparse
+import itertools
+from distutils.log import error
+
+from sklearn.metrics import confusion_matrix
+from sklearn.preprocessing import normalize
 from helpers.utils import parse_args
 from networks.resnet6 import ResnetGenerator
 from networks.segnet import segnet, segnetm
@@ -55,7 +60,7 @@ if __name__ == "__main__":
     
     size_chips = 64
     
-    #args.use_mini = True
+    args.use_mini = True
     # args.use_SE = True
     # args.use_preluSE = True
     #args.network_weights_path = 'savedmodels/unetm.pt'
@@ -112,11 +117,16 @@ if __name__ == "__main__":
     clmap_labels = np.zeros(((1920,3968)))
     clmap_labels_color = np.zeros(((1920, 3968, 3)))
     clmap_dif = np.zeros(((1920, 3968, 3)))
+    errors = {"building":0, "ground":0, "road":0, "water":0,"car":0}
+    class_num = {"building":0, "ground":0, "road":0, "water":0,"car":0}
+    precisions = {"building":0, "ground":0, "road":0, "water":0,"car":0}
+    keys = list(errors.keys())
 
     rgb = image_rgb[:,:,:]
     rad = image_hsi_rad[:,:,:]
     ref = image_hsi_ref[:,:,:]
     labels = image_labels[:,:,:]
+
 
     x_arr, y_arr, _ = rgb.shape
         
@@ -159,7 +169,7 @@ if __name__ == "__main__":
                     clmap_labels[xx:xx+size_chips,yy:yy+size_chips].shape[0] == size_chips and \
                     clmap_labels[xx:xx+size_chips,yy:yy+size_chips].shape[1] == size_chips:
                         clmap_labels[xx:xx+size_chips,yy:yy+size_chips] = label_pred
-                # if xx > 600:
+                # if xx > 300:
                 #     salir=True
                 #     break
         print(xx)
@@ -171,28 +181,123 @@ if __name__ == "__main__":
             if clmap_labels[i,j] == 1:
                 #print(clmap_color[i,j])
                 clmap_labels_color[i,j,1] = 255
+                class_num[keys[int(clmap_labels[i,j])]] +=1
+
             elif clmap_labels[i,j] == 2:
                 #print(clmap_color[i,j])
                 clmap_labels_color[i,j,2] = 255
+                class_num[keys[int(clmap_labels[i,j])]] +=1
             elif clmap_labels[i,j] == 3:
                 #print(clmap_color[i,j])
                 clmap_labels_color[i,j,1] = 255
                 clmap_labels_color[i,j,2] = 255
+                class_num[keys[int(clmap_labels[i,j])]] +=1
             elif clmap_labels[i,j] == 4:
                 # print(clmap_color[i,j])
                 clmap_labels_color[i,j,0] = 255
                 clmap_labels_color[i,j,1] = 127
                 clmap_labels_color[i,j,2] = 80
+                class_num[keys[int(clmap_labels[i,j])]] +=1
             elif clmap_labels[i,j] == 0:
                 # print(clmap_color[i,j])
                 clmap_labels_color[i,j,0] = 255
+                class_num[keys[int(clmap_labels[i,j])]] +=1
                 
             if clmap_color[i,j,0] != clmap_labels_color[i,j,0] or \
                 clmap_color[i,j,1] != clmap_labels_color[i,j,1] or \
                 clmap_color[i,j,2] != clmap_labels_color[i,j,2]:
 
                 clmap_dif[i,j] = [255,255,255]
+                errors[keys[int(clmap_labels[i,j])]] +=1
 
+    for index in  range(5):
+        precisions[keys[index]] = (class_num[keys[index]]-errors[keys[index]])/(class_num[keys[index]])
+
+    #Creating confussion matrix
+    
+    confusionMatrix = np.zeros(((5,5)))
+
+    for i in range(1920):
+        for j in range(3968):
+            if clmap_labels[i,j] == 0:
+                if clmap_color[i,j,0] == 255 and clmap_color[i,j,1] == 0 and clmap_color[i,j,2] == 0:
+                    confusionMatrix[0,0] += 1
+                elif clmap_color[i,j,1] == 255 and clmap_color[i,j,0] == 0 and clmap_color[i,j,2] == 0:
+                    confusionMatrix[0,1] += 1
+                elif clmap_color[i,j,2] == 255 and clmap_color[i,j,0] == 0 and clmap_color[i,j,1] == 0:
+                    confusionMatrix[0,2] += 1
+                elif clmap_color[i,j,1] == 255 and clmap_color[i,j,2] == 255 and clmap_color[i,j,0] == 0:
+                    confusionMatrix[0,3] += 1
+                elif clmap_color[i,j,2] == 80 and clmap_color[i,j,0] == 255 and clmap_color[i,j,1] == 127:
+                    confusionMatrix[0,4] += 1
+            elif clmap_labels[i,j] == 1:
+                if clmap_color[i,j,0] == 255 and clmap_color[i,j,1] == 0 and clmap_color[i,j,2] == 0:
+                    confusionMatrix[1,0] += 1
+                elif clmap_color[i,j,1] == 255 and clmap_color[i,j,0] == 0 and clmap_color[i,j,2] == 0:
+                    confusionMatrix[1,1] += 1
+                elif clmap_color[i,j,2] == 255 and clmap_color[i,j,0] == 0 and clmap_color[i,j,1] == 0:
+                    confusionMatrix[1,2] += 1
+                elif clmap_color[i,j,1] == 255 and clmap_color[i,j,2] == 255 and clmap_color[i,j,0] == 0:
+                    confusionMatrix[1,3] += 1
+                elif clmap_color[i,j,2] == 80 and clmap_color[i,j,0] == 255 and clmap_color[i,j,1] == 127:
+                    confusionMatrix[1,4] += 1
+            elif clmap_labels[i,j] == 2:
+                if clmap_color[i,j,0] == 255 and clmap_color[i,j,1] == 0 and clmap_color[i,j,2] == 0:
+                    confusionMatrix[2,0] += 1
+                elif clmap_color[i,j,1] == 255 and clmap_color[i,j,0] == 0 and clmap_color[i,j,2] == 0:
+                    confusionMatrix[2,1] += 1
+                elif clmap_color[i,j,2] == 255 and clmap_color[i,j,0] == 0 and clmap_color[i,j,1] == 0:
+                    confusionMatrix[2,2] += 1
+                elif clmap_color[i,j,1] == 255 and clmap_color[i,j,2] == 255 and clmap_color[i,j,0] == 0:
+                    confusionMatrix[2,3] += 1
+                elif clmap_color[i,j,2] == 80 and clmap_color[i,j,0] == 255 and clmap_color[i,j,1] == 127:
+                    confusionMatrix[2,4] += 1
+            elif clmap_labels[i,j] == 3:
+                if clmap_color[i,j,0] == 255 and clmap_color[i,j,1] == 0 and clmap_color[i,j,2] == 0:
+                    confusionMatrix[3,0] += 1
+                elif clmap_color[i,j,1] == 255 and clmap_color[i,j,0] == 0 and clmap_color[i,j,2] == 0:
+                    confusionMatrix[3,1] += 1
+                elif clmap_color[i,j,2] == 255 and clmap_color[i,j,0] == 0 and clmap_color[i,j,1] == 0:
+                    confusionMatrix[3,2] += 1
+                elif clmap_color[i,j,1] == 255 and clmap_color[i,j,2] == 255 and clmap_color[i,j,0] == 0:
+                    confusionMatrix[3,3] += 1
+                elif clmap_color[i,j,2] == 80 and clmap_color[i,j,0] == 255 and clmap_color[i,j,1] == 127:
+                    confusionMatrix[3,4] += 1
+            elif clmap_labels[i,j] == 4:
+                if clmap_color[i,j,0] == 255 and clmap_color[i,j,1] == 0 and clmap_color[i,j,2] == 0:
+                    confusionMatrix[4,0] += 1
+                elif clmap_color[i,j,1] == 255 and clmap_color[i,j,0] == 0 and clmap_color[i,j,2] == 0:
+                    confusionMatrix[4,1] += 1
+                elif clmap_color[i,j,2] == 255 and clmap_color[i,j,0] == 0 and clmap_color[i,j,1] == 0:
+                    confusionMatrix[4,2] += 1
+                elif clmap_color[i,j,1] == 255 and clmap_color[i,j,2] == 255 and clmap_color[i,j,0] == 0:
+                    confusionMatrix[4,3] += 1
+                elif clmap_color[i,j,2] == 80 and clmap_color[i,j,0] == 255 and clmap_color[i,j,1] == 127:
+                    confusionMatrix[4,4] += 1
+    
+
+    confusionMatrix = normalize(confusionMatrix, axis=1, norm='l1')
+    confusionMatrix = np.round(confusionMatrix, decimals=4)
+    plt.imshow(confusionMatrix,interpolation = 'nearest', cmap = 'plasma')
+    plt.title('Confusion Matrix')
+    plt.colorbar()
+    tick_marks = np.arange(len(keys))
+    plt.xticks(tick_marks, keys, rotation = 45)
+    plt.yticks(tick_marks, keys)
+
+    thres = 0.
+    confusionMatrix = normalize(confusionMatrix, axis=1, norm='l1')
+    confusionMatrix = np.round(confusionMatrix, decimals=4)
+    for i, j in itertools.product(range(confusionMatrix.shape[0]), range(confusionMatrix.shape[1])):
+        plt.text(j, i, confusionMatrix[i, j], horizontalalignment="center", color="white" if confusionMatrix[i, j] < thres else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    plt.show()
+    
+       
+                
     sio.savemat("clmap.mat", {"clmap":clmap_color})
     plt.imshow(clmap_color,vmin=0)
     plt.show()
@@ -205,6 +310,10 @@ if __name__ == "__main__":
     sio.savemat("clmap_diff.mat", {"clmap_diff":clmap_dif})
     plt.imshow(clmap_dif,vmin=0)
     plt.show()
+    print(errors)
+    print(precisions)
+    print(net)
+
     # sio.savemat("clmap_all.mat", {"clmap_diff":clmap_dif,"clmap_comp":clmap_labels_color, "clmap":clmap_color})
     
     
