@@ -26,6 +26,7 @@ from networks.resnet6 import ResnetGenerator
 from networks.segnet import segnet, segnetm
 from networks.unet import unet, unetm
 from networks.model_utils import init_weights, load_weights
+from networks.mobileone_pytorch import mobileone_s4
 
 import argparse
 
@@ -49,6 +50,7 @@ def train(epoch = 0):
         
         outputs = net(hsi_ip.to(device))
         
+
         loss = criterion(outputs, labels.to(device))
         loss.backward()
         optimizer.step()
@@ -131,7 +133,7 @@ if __name__ == "__main__":
     parser.add_argument('--use_cuda', action = 'store_true', help = 'use GPUs?')
     
     ### Hyperparameters
-    parser.add_argument('--batch-size', default = 100, type = int, help = 'Number of images sampled per minibatch?')
+    parser.add_argument('--batch-size', default = 64, type = int, help = 'Number of images sampled per minibatch?')
     parser.add_argument('--init_weights', default = 'kaiming', help = "Choose from: 'normal', 'xavier', 'kaiming'")
     parser.add_argument('--learning-rate', default = 1e-4, type = int, help = 'Initial learning rate for training the network?')
     parser.add_argument('--epochs', default = 60, type = int, help = 'Maximum number of epochs?')
@@ -190,20 +192,22 @@ if __name__ == "__main__":
     
     criterion = cross_entropy2d(reduction = 'mean', weight=weights.cuda(), ignore_index = 5)
     
-    if args.network_arch == 'resnet':
-        net = ResnetGenerator(args.bands, 6, n_blocks=args.resnet_blocks)
-    elif args.network_arch == 'segnet':
-        if args.mini == True:
-            net = segnetm(args.bands, 6)
-        else:
-            net = segnet(args.bands, 6)
-    elif args.network_arch == 'unet':
-        if args.use_mini == True:
-            net = unetm(args.bands, 6, use_SE = args.use_SE, use_PReLU = args.use_preluSE)
-        else:
-            net = unet(args.bands, 6)
-    else:
-        raise NotImplementedError('required parameter not found in dictionary')
+    # if args.network_arch == 'resnet':
+    #     net = ResnetGenerator(args.bands, 6, n_blocks=args.resnet_blocks)
+    # elif args.network_arch == 'segnet':
+    #     if args.mini == True:
+    #         net = segnetm(args.bands, 6)
+    #     else:
+    #         net = segnet(args.bands, 6)
+    # elif args.network_arch == 'unet':
+    #     if args.use_mini == True:
+    #         net = unetm(args.bands, 6, use_SE = args.use_SE, use_PReLU = args.use_preluSE)
+    #     else:
+    #         net = unet(args.bands, 6)
+    # else:
+    #     raise NotImplementedError('required parameter not found in dictionary')
+
+    net = mobileone_s4(6)
    
     init_weights(net, init_type=args.init_weights)
     if args.pretrained_weights is not None:
