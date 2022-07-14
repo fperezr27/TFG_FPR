@@ -44,7 +44,6 @@ def train(epoch = 0):
     running_loss = 0.0
     
     for idx, (rgb_ip, hsi_ip, labels) in enumerate(trainloader, 0):
-#        print(idx)
         N = hsi_ip.size(0)
         optimizer.zero_grad()
         
@@ -79,7 +78,6 @@ def val(epoch = 0):
     with torch.no_grad():
         acum = 0
         for idx, (rgb_ip, hsi_ip, labels) in enumerate(valloader, 0):
-    #        print(idx)
             N = hsi_ip.size(0)
             
             outputs = net(hsi_ip.to(device))
@@ -208,6 +206,9 @@ if __name__ == "__main__":
     #     raise NotImplementedError('required parameter not found in dictionary')
 
     net = mobileone_s4(6)
+    #net = segnet(args.bands, 6)
+    #net = unet(args.bands, 6)
+    #net = ResnetGenerator(args.bands, 6, n_blocks=args.resnet_blocks)
    
     init_weights(net, init_type=args.init_weights)
     if args.pretrained_weights is not None:

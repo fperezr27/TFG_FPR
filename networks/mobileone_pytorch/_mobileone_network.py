@@ -47,6 +47,7 @@ NetworkConfigs = Dict[MobileOneSize, NetworkConfig]
 _BASE_CONFIG = NetworkBasicConfig(
     num_blocks=[1, 2, 8, 5, 5, 1],
     strides=[2, 2, 2, 2, 1, 2],
+    #strides = [64, 64, 64, 64, 64, 64],
     out_channels=[64, 64, 128, 256, 256, 512],
 )
 
@@ -106,7 +107,7 @@ class MobileOneNetwork(ReparametrizableModule):
         out_channels: List[int],
         num_blocks: List[int],
         strides: List[int],
-        num_classes: int = 1000,
+        num_classes: int = 6,
     ):
         super().__init__()
         self._features = ReparametrizableSequential(
@@ -129,8 +130,9 @@ class MobileOneNetwork(ReparametrizableModule):
         self._average_pooling = nn.AdaptiveAvgPool2d((1, 1))
         self._linear = nn.Linear(
             in_features=out_channels[-1],
-            out_features=num_classes,
+            out_features=num_classes
         )
+        self._conv = nn.Conv2d(out_channels[-1],num_classes,kernel_size=2, padding=32)
 
     @property
     def num_classes(self) -> int:
@@ -139,9 +141,12 @@ class MobileOneNetwork(ReparametrizableModule):
     def forward(self, x: Tensor) -> Tensor:
         x = self._features(x)
         x = self._average_pooling(x)
-        x = torch.flatten(x, 1)
-        x = self._linear(x)
+        #x = torch.flatten(x, 1)
+        #x = self._linear(x)
+        x = self._conv(x)
+        
 
+        
         return x
 
     def reparametrize(self) -> nn.Sequential:

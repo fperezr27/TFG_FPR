@@ -112,6 +112,7 @@ class segnetUp3(nn.Module):
         outputs = self.conv1(outputs)
         outputs = self.conv2(outputs)
         outputs = self.conv3(outputs)
+        #print(outputs.shape)
         return outputs
     
 class segnetDown3(nn.Module):

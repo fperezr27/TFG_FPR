@@ -152,7 +152,7 @@ class unet(nn.Module):
         up1 = self.up_concat1(conv1, up2)
 
         final = self.final(up1)
-
+        
         return final
     
 class unetm(nn.Module):
