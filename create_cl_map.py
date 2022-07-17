@@ -15,6 +15,7 @@ from helpers.utils import parse_args
 from networks.resnet6 import ResnetGenerator
 from networks.segnet import segnet, segnetm
 from networks.unet import unet, unetm
+from networks.mobileone_pytorch import mobileone_s4
 import torch
 import os
 import os.path as osp
@@ -85,20 +86,22 @@ if __name__ == "__main__":
     
 
 
-    if args.network_arch == 'resnet':
-        net = ResnetGenerator(args.bands, 6, n_blocks=args.resnet_blocks)
-    elif args.network_arch == 'segnet':
-        if args.mini == True:
-            net = segnetm(args.bands, 6)
-        else:
-            net = segnet(args.bands, 6)
-    elif args.network_arch == 'unet':
-        if args.use_mini == True:
-            net = unetm(args.bands, 6, use_SE = args.use_SE, use_PReLU = args.use_preluSE)
-        else:
-            net = unet(args.bands, 6)
-    else:
-        raise NotImplementedError('required parameter not found in dictionary')
+    # if args.network_arch == 'resnet':
+    #     net = ResnetGenerator(args.bands, 6, n_blocks=args.resnet_blocks)
+    # elif args.network_arch == 'segnet':
+    #     if args.mini == True:
+    #         net = segnetm(args.bands, 6)
+    #     else:
+    #         net = segnet(args.bands, 6)
+    # elif args.network_arch == 'unet':
+    #     if args.use_mini == True:
+    #         net = unetm(args.bands, 6, use_SE = args.use_SE, use_PReLU = args.use_preluSE)
+    #     else:
+    #         net = unet(args.bands, 6)
+    # else:
+    #     raise NotImplementedError('required parameter not found in dictionary')
+
+    net = mobileone_s4()
 
     net.load_state_dict(torch.load(args.network_weights_path))
     net.eval()

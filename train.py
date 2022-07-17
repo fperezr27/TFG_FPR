@@ -48,7 +48,6 @@ def train(epoch = 0):
         optimizer.zero_grad()
         
         outputs = net(hsi_ip.to(device))
-        
 
         loss = criterion(outputs, labels.to(device))
         loss.backward()
@@ -205,7 +204,7 @@ if __name__ == "__main__":
     # else:
     #     raise NotImplementedError('required parameter not found in dictionary')
 
-    net = mobileone_s4(6)
+    net = mobileone_s4()
     #net = segnet(args.bands, 6)
     #net = unet(args.bands, 6)
     #net = ResnetGenerator(args.bands, 6, n_blocks=args.resnet_blocks)

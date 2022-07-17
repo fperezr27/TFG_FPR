@@ -107,47 +107,78 @@ class MobileOneNetwork(ReparametrizableModule):
         num_blocks: List[int],
         strides: List[int],
         num_classes: int = 6,
+        gpu_ids=[]
     ):
         super().__init__()
-        self._features = ReparametrizableSequential(
-            OrderedDict(
-                [
-                    (
-                        f"_stage{i+1}",
-                        _compose_stage(
-                            num_blocks=num_blocks[i],
-                            k=ks[i],
-                            in_channels=51 if i == 0 else out_channels[i - 1],  
-                            out_channels=out_channels[i],
-                            stride=strides[i],
-                        ),
-                    )
-                    for i in range(len(num_blocks))
-                ]
-            )
-        )
-        self._average_pooling = nn.AdaptiveAvgPool2d((2, 2))
-        self._linear = nn.Linear(
-            in_features=out_channels[-1],
-            out_features=num_classes
-        )
-        self._conv = nn.Conv2d(out_channels[-1],num_classes,kernel_size=3, padding=1)
-        self.cbr_unit = nn.Sequential(self._conv, nn.ReLU(inplace=True))
+        # self._features = ReparametrizableSequential(
+        #     OrderedDict(
+        #         [
+        #             (
+        #                 f"_stage{i+1}",
+        #                 _compose_stage(
+        #                     num_blocks=num_blocks[i],
+        #                     k=ks[i],
+        #                     in_channels=51 if i == 0 else out_channels[i - 1],  
+        #                     out_channels=out_channels[i],
+        #                     stride=strides[i],
+        #                 ),
+        #             )
+        #             for i in range(len(num_blocks))
+        #         ]
+        #     )
+        # )
+        # self._average_pooling = nn.AdaptiveAvgPool2d((2, 2))
+        # self._linear = nn.Linear(
+        #     in_features=out_channels[-1],
+        #     out_features=num_classes
+        # )
+        # self._conv = nn.Conv2d(out_channels[-1],num_classes,kernel_size=3, padding=1)
+        # self.cbr_unit = nn.Sequential(self._conv, nn.ReLU(inplace=True))
+        self.gpu_ids = gpu_ids
+        model = [nn.Conv2d(51, 6, kernel_size=7, padding=3),
+                 nn.BatchNorm2d(6, affine=True),
+                 nn.ReLU(True)]
+
+        n_downsampling = 2
+        for i in range(n_downsampling):
+            mult = 2**i
+            model += [nn.Conv2d(6 * mult, 6 * mult * 2, kernel_size = 3,
+                                stride=2, padding=1),
+                      nn.BatchNorm2d(6 * mult * 2, affine=True),
+                      nn.ReLU(True)]
+
+        mult = 2**n_downsampling
+        for i in range(6):
+            model += [MobileOneBlock(1,6 * mult,6 * mult,1)]
+        
+        for i in range(n_downsampling):
+            mult = 2**(n_downsampling-i)
+            model += [nn.ConvTranspose2d(6 * mult, int(6 * mult / 2),
+                                         kernel_size=3, stride=2,
+                                         padding=1, output_padding=1),
+                      nn.BatchNorm2d(int(6 * mult / 2), affine=True),
+                      nn.ReLU(True)]
+
+        model += [nn.Conv2d(6,6,kernel_size=7, padding=3)]
+
+        self.model = nn.Sequential(*model)
 
     @property
     def num_classes(self) -> int:
         return self._linear.out_features
 
     def forward(self, x: Tensor) -> Tensor:
-        x = self._features(x)
-        x = self._average_pooling(x)
-        #x = torch.flatten(x, 1)
-        #x = self._linear(x)
-        x = self.cbr_unit(x)
+        # x = self._features(x)
+        # x = self._average_pooling(x)
+        # #x = torch.flatten(x, 1)
+        # #x = self._linear(x)
+        # x = self.cbr_unit(x)
         
-
-        
-        return x
+        #return self.model(x)
+        if self.gpu_ids and isinstance(x.data, torch.cuda.FloatTensor):
+            return nn.parallel.data_parallel(self.model, x, self.gpu_ids)
+        else:
+            return self.model(x)
 
     def reparametrize(self) -> nn.Sequential:
         return nn.Sequential(
