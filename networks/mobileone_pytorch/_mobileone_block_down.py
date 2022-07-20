@@ -28,7 +28,7 @@ class MobileOneBlockDown(MobileOneBlockComponent, ReparametrizableParallelModule
             k=k,
             in_channels=in_channels,
             out_channels=out_channels,
-            kernel_size=(1, 1),
+            kernel_size=(3, 3),
             stride=1,
             groups=1,
         )
