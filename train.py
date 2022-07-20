@@ -133,7 +133,7 @@ if __name__ == "__main__":
     parser.add_argument('--batch-size', default = 64, type = int, help = 'Number of images sampled per minibatch?')
     parser.add_argument('--init_weights', default = 'kaiming', help = "Choose from: 'normal', 'xavier', 'kaiming'")
     parser.add_argument('--learning-rate', default = 1e-4, type = int, help = 'Initial learning rate for training the network?')
-    parser.add_argument('--epochs', default = 60, type = int, help = 'Maximum number of epochs?')
+    parser.add_argument('--epochs', default = 100, type = int, help = 'Maximum number of epochs?')
     
     ### Pretrained representation present?
     parser.add_argument('--pretrained_weights', default = None, help = 'Path to pretrained weights for network')

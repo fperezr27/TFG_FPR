@@ -135,31 +135,33 @@ class MobileOneNetwork(ReparametrizableModule):
         # self._conv = nn.Conv2d(out_channels[-1],num_classes,kernel_size=3, padding=1)
         # self.cbr_unit = nn.Sequential(self._conv, nn.ReLU(inplace=True))
         self.gpu_ids = gpu_ids
-        model = [nn.Conv2d(51, 6, kernel_size=7, padding=3),
-                 nn.BatchNorm2d(6, affine=True),
+        ngf = 64
+        input_c = 51
+        model = [nn.Conv2d(input_c, ngf, kernel_size=7, padding=3),
+                 nn.BatchNorm2d(ngf, affine=True),
                  nn.ReLU(True)]
 
         n_downsampling = 2
         for i in range(n_downsampling):
             mult = 2**i
-            model += [nn.Conv2d(6 * mult, 6 * mult * 2, kernel_size = 3,
+            model += [nn.Conv2d(ngf * mult, ngf * mult * 2, kernel_size = 3,
                                 stride=2, padding=1),
-                      nn.BatchNorm2d(6 * mult * 2, affine=True),
+                      nn.BatchNorm2d(ngf * mult * 2, affine=True),
                       nn.ReLU(True)]
 
         mult = 2**n_downsampling
         for i in range(6):
-            model += [MobileOneBlock(1,6 * mult,6 * mult,1)]
+            model += [MobileOneBlock(ks[i],ngf * mult,ngf * mult,1)]
         
         for i in range(n_downsampling):
             mult = 2**(n_downsampling-i)
-            model += [nn.ConvTranspose2d(6 * mult, int(6 * mult / 2),
+            model += [nn.ConvTranspose2d(ngf * mult, int(ngf * mult / 2),
                                          kernel_size=3, stride=2,
                                          padding=1, output_padding=1),
-                      nn.BatchNorm2d(int(6 * mult / 2), affine=True),
+                      nn.BatchNorm2d(int(ngf * mult / 2), affine=True),
                       nn.ReLU(True)]
 
-        model += [nn.Conv2d(6,6,kernel_size=7, padding=3)]
+        model += [nn.Conv2d(ngf,6,kernel_size=7, padding=3)]
 
         self.model = nn.Sequential(*model)
 
